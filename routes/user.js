@@ -65,12 +65,12 @@ router.get("/",async (req,res)=>{
     }
 })
 
-//get friends 
+// get friends 
 router.get("/friends/:userId", async(req,res)=>{
   try{
      const user = await User.findById(req.params.userId);
      const friends = await Promise.all(
-      user.followings.map(friendId=>{
+      user.followers.map(friendId=>{
         return User.findById(friendId)
       })
      )
@@ -84,6 +84,9 @@ router.get("/friends/:userId", async(req,res)=>{
     res.status(500).json(err)
   }
 })
+
+
+
 
 
 
@@ -129,6 +132,56 @@ router.put("/:id/unfollow",async (req,res)=>{
       res.status(403).json("you can unfollow yourself ");
   }
 })
+
+// routes/users.js
+router.get("/:userId/suggested-friends", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    const myFollowings = user.followings || [];
+
+    // If user already follows others, suggest their friends (not followed yet by user)
+    if (myFollowings.length > 0) {
+      const suggestions = new Set();
+
+      for (const fid of myFollowings) {
+        const fUser = await User.findById(fid);
+        fUser.followings.forEach((fOfFid) => {
+          if (
+            !myFollowings.includes(fOfFid.toString()) &&
+            fOfFid.toString() !== user._id.toString()
+          ) {
+            suggestions.add(fOfFid.toString());
+          }
+        });
+      }
+
+      const suggestedUsers = await User.find(
+        {
+          _id: { $in: Array.from(suggestions) },
+          _id: { $ne: user._id }, // exclude self
+        },
+        "_id username profilePicture"
+      );
+
+      return res.status(200).json(suggestedUsers);
+    }
+
+    // If new user (not following anyone), return random users (excluding self)
+    const randomUsers = await User.aggregate([
+      { $match: { _id: { $ne: user._id } } },
+      { $sample: { size: 5 } },
+      { $project: { _id: 1, username: 1, profilePicture: 1 } }
+    ]);
+
+    return res.status(200).json(randomUsers);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json("Error fetching suggested friends");
+  }
+});
+
+
 
 module.exports = router;
 
