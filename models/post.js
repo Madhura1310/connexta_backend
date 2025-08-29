@@ -16,6 +16,10 @@ const PostSchema = new mongoose.Schema({
         type: Array,
         default:[],
     },
+     location: {   
+        type: String,
+        default: ""
+    },
 },
 {timestamps:true},
 )

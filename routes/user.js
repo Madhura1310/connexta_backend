@@ -181,6 +181,30 @@ router.get("/:userId/suggested-friends", async (req, res) => {
   }
 });
 
+// get a user by id
+router.get("/:userId", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    const { password, updatedAt, ...other } = user._doc;
+    res.status(200).json(other);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+// get all users (you can filter later for friends only)
+router.get("/", async (req, res) => {
+  try {
+    const users = await User.find();
+    res.status(200).json(users);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+
+
+
 
 
 module.exports = router;
